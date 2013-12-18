@@ -1,5 +1,7 @@
-Virtualenv set up and Flask installed.
+Flask is required for this folder.
 
-Activate virtualenv by:
-. venv/bin/activate
+Preferably insteall it using virutalenv.
+
+
+
 
