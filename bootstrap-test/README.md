@@ -1,7 +1,5 @@
-Flask is required for this folder.
+Folder to test Twitter bootstrap. Uses Flask as web server.
+Uses package Flask-Bootstrap.
 
-Preferably insteall it using virutalenv.
-
-
-
-
+Install dependencies (preferably inside virtualenv) by:
+pip install -r requirements.txt
