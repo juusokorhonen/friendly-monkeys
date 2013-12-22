@@ -15,13 +15,20 @@ body {
 /* Custom page header */
 .header {
 	border-bottom: 1px solid #e5e5e5;
+	font-family: 'Josefin Sans', sans-serif;
+	font-weight: 700;
 }
 /* Make the masthead heading the same height as the navigation */
 .header h3 {
 	margin-top: 0;
 	margin-bottom: 0;
-	line-height: 40px;
+	/*line-height: 40px;*/
 	padding-bottom: 19px;
+	/* Change font */
+	font-family: 'Amatic SC', cursive;
+	font-weight: 700;
+	line-height: 40px;
+	font-size: 40px;
 }
 
 /* Custom page footer */
@@ -51,12 +58,34 @@ body {
 	padding: 14px 24px;
 }
 
+.jumbotron h1 {
+	font-family: 'Amatic SC', cursive;
+	font-weight: 700;
+	line-height: 46px;
+	font-size: 46px;
+	margin: 0 0 23px 0;
+}
+p {
+	font-family: 'Josefin Sans', sans-serif;
+	font-weight: 700;
+}
+
 /* Supporting marketing content */
 .marketing {
 	margin: 40px 0;
 }
 .marketing p + h4 {
 	margin-top: 28px;
+}
+.marketing h4 {
+	font-family: 'Amatic SC', cursive;
+	font-weight: 700;
+	font-size: 30px;
+	line-height: 30px;
+}
+.marketing p {
+	font-family: 'Josefin Sans', sans-serif;
+	font-weight: 700;
 }
 
 /* Responsive: Portrait tablets and up */

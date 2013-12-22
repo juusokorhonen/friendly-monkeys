@@ -1,35 +1,41 @@
 <DOCTYPE html>
 <html lang="en">
   <head>
+    {% block head %}
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="description" content="{% block description %}{% endblock %}">
+    <meta name="author" content="{% block author %}Juuso Korhonen{% endblock %}">
     <link rel="shortcut icon" href="{{url_for('static', filename='favicon.png')}}">
 
-    <title>Narrow Jumbotron template test</title>
+    <title>{% block title %}Narrow Jumbotron template test{% endblock %}</title>
 
     <!-- Bootstrap core CSS -->
     <link href="{{url_for('static', filename='dist/css/bootstrap.min.css')}}" rel="stylesheet">
 
-    <!-- Custon styles for this template -->
+    <!-- Custom styles for this template -->
     <link href="{{url_for('static', filename='jumbotron-narrow.css')}}" rel="stylesheet">
-
+    <!-- Custom fonts -->
+    <link href="http://fonts.googleapis.com/css?family=Josefin+Sans:700|Amatic+SC:700" rel="stylesheet" type="text/css" />
+    {% endblock %}
   </head>
 
   <body>
 
     <div class="container">
+      {% block navigation %}
       <div class="header">
         <ul class="nav nav-pills pull-right">
 	  <li class="active"><a href="#">Home</a></li>
 	  <li><a href="#">About</a></li>
 	  <li><a href="#">Contact</a></li>
 	</ul>
-	<h3 class="text-muted">Friendly Monkeys</h3>
+	<h3><span class="glyphicon glyphicon-heart-empty" style="color:#ff33cc"></span> Friendly Monkeys</h3>
       </div>
-
+      {% endblock %}
+	
+      {% block content %}
       <div class="jumbotron">
         <h1>Friendly Monkeys!</h1>
 	<p class="lead">Curabitur aliquet arcu in enim faucibus, sit amet tincidunt lectus iaculis. Curabitur tempus vel lorem eget pretium. Donec sed metus quis sapien ornare tincidunt. Vestibulum blandit lorem ut arcu bibendum, et porttitor arcu tempus. Nunc nunc diam, porta a lectus eget, mollis interdum lectus. Donec tortor nulla, accumsan vel scelerisque eget, interdum a libero. Donec lobortis leo a magna commodo hendrerit.</p>
@@ -49,9 +55,10 @@
 	  <p>Curabitur aliquet arcu in enim faucibus, sit amet tincidunt lectus iaculis. Curabitur tempus vel lorem eget pretium. Donec sed metus quis sapien ornare tincidunt. Vestibulum blandit lorem ut arcu bibendum, et porttitor arcu tempus. Nunc nunc diam, porta a lectus eget, mollis interdum lectus. Donec tortor nulla, accumsan vel scelerisque eget, interdum a libero. Donec lobortis leo a magna commodo hendrerit. </p>
 	</div>
       </div>
+      {% endblock %}
 
       <div class="footer">
-        <p>&copy; Friendly Monkeys 2013</p>
+        {% block footer %}<p>&copy; Juuso Korhonen 2013</p>{% endblock %}
       </div>
 
     </div> <!-- /container -->
