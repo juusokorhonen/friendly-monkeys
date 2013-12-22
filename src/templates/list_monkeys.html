@@ -1,0 +1,12 @@
+
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}List Monkeys - Friendly Monkeys{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <h1>Here come the monkeys</h1>
+  <p>There are no monkeys in the database. Please <a href="{{url_for('add')}}">add some</a>.</p>
+
+</div><!-- /jumbotron -->
+{% endblock %}

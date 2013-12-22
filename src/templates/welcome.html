@@ -1,0 +1,13 @@
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}Welcome to Friendly Monkeys!{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <h1>Friendly Monkeys!</h1>
+  <p class="lead">Welcome to Friendly Monkeys, a web application, which makes it easy for monkeys to connect with each other. That is about as much as your average monkey can do on a computer, anyway.</p>
+  <p>You can fool around in the playground as much as you like!</p>
+  <p><a class="btn btn-lg btn-success" href="{{url_for('list')}}" role="button">Begin!</a></p>
+
+</div><!-- /jumbotron -->
+{% endblock %}
