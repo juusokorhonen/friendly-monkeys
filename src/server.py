@@ -35,6 +35,14 @@ def get_db():
 	db = g.db = connect_db()
     return db	
 
+# Query the database
+def query_db(query, args=(), one=False):
+    """Makes a query to the database and returns the results."""
+    cur = get_db().execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
+
 @app.teardown_request
 def teardown_request(exception):
     """Closes the database connection at the end of the request."""

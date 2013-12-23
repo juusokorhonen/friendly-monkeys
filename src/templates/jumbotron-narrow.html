@@ -26,16 +26,14 @@
     <div class="container">
       {% block navigation %}
       <div class="header">
-        <ul class="nav nav-pills pull-right">
+        <ul class="nav nav-pills pull-right dropdown">
 	  <li class="active"><a href="{{url_for('welcome')}}">Welcome</a></li>
-        </ul>	
-	<div class="dropdown">
-	  <a id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="#">Actions <span class="caret"></span></a>
+	  <li><a id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="#">Actions <span class="caret"></span></a>
 	  <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
 	    <li><a href="{{url_for('list')}}">List monkeys</a></li>
 	    <li><a href="{{url_for('add')}}">Add monkey</a></li>
 	  </ul>
-	</div>
+        </ul>
 	<h3><span class="glyphicon glyphicon-heart-empty" style="color:#ff33cc"></span> Friendly Monkeys</h3>
       </div>
       {% endblock %}
@@ -68,6 +66,7 @@
 
     </div> <!-- /container -->
 
+    <!-- Include jquery and bootstrap javascript extensions -->
     <script src="{{url_for('static', filename='dist/js/jquery-2.0.3.js')}}"></script>
     <script src="{{url_for('static', filename='dist/js/bootstrap.min.js')}}"></script>
 
