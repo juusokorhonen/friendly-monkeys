@@ -6,7 +6,32 @@
 {% block content %}
 <div class="jumbotron">
   <h1>Here come the monkeys</h1>
+  {% if not monkeys %}
   <p>There are no monkeys in the database. Please <a href="{{url_for('add')}}">add some</a>.</p>
+  {% else %}
+  <table class="table table-striped table-hover">
+	<thead>
+		<tr>
+			<th>ID#</th>
+			<th>Username</th>
+			<th>Name</th>
+			<th>Friends</th>
+			<th>Actions</th>
+		</tr>
+	</thead>
+	<tbody>
+	{% for monkey in monkeys %}
+		<tr>
+			<td>{{ monkey.monkeyid }}</td>
+			<td>{{ monkey.username }}</td>
+			<td>{{ monkey.name }}</td>
+			<td>Not implemented</td>
+			<td><a href="#" class="btn btn-primary btn-xs" role="button">Edit</a></td>
+		</tr>
+	{% endfor %}	  
+	</tbody>
+  </table>
+  {% endif %}
 
 </div><!-- /jumbotron -->
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}Add a monkeys - Friendly Monkeys{% endblock %}
+
+{% from "_formhelpers.html" import render_field %}
+
+{% block content %}
+<div class="jumbotron">
+  <h1>Add a monkey</h1>
+  <p>You can use the form below to add a monkey to the database.</p>
+  <form class="form-horizontal" role="form" method="post" action="{{url_for('add')}}">
+	  {{ form.hidden_tag() }}
+	  <dl>
+		  {{ render_field(form.username) }}
+		  {{ render_field(form.name) }}
+	  </dl>
+	  <p><input type="submit" value="Add monkey"></p>
+  </form>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        {% if (category == 'error') %}
+          <div class="alert small alert-danger">
+	    <span class="glyphicon glyphicon-remove-circle"></span>
+	{% else %}
+	  <div class="alert small alert-success">
+	    <span class="glyphicon glyphicon-ok-circle"></span>
+	{% endif %}
+	    {{ message|safe }}
+          </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}    
+
+</div><!-- /jumbotron -->
+{% endblock %}

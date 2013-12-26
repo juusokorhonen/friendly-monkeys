@@ -107,3 +107,12 @@ p {
 	}
 }
 
+/* Flashes */
+.flashes {
+	/* Pass */	
+}
+
+/* Input form errors */
+.errors {
+	font-size: small;
+}

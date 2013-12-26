@@ -8,6 +8,7 @@
   <p class="lead">Welcome to Friendly Monkeys, a web application, which makes it easy for monkeys to connect with each other. That is about as much as your average monkey can do on a computer, anyway.</p>
   <p>You can fool around in the playground as much as you like!</p>
   <p><a class="btn btn-lg btn-success" href="{{url_for('list')}}" role="button">Begin!</a></p>
+  <p>You can also either <a href="{{ url_for('load_example_data') }}">load example data</a> or <a href="{{ url_for('wipe_database') }}">wipe the database</a>.</p>
 
 </div><!-- /jumbotron -->
 {% endblock %}
