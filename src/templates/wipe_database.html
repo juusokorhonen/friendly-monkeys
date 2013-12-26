@@ -1,0 +1,20 @@
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}Wipe database - Friendly Monkeys{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+	{% if confirm %}
+	<h1>Database wiped!</h1>
+	<p>Now, go back to <a href="{{ url_for('welcome') }}">front page</a> or <a href="{{ url_for('load_example_data') }}">load example data</a>.</p> 
+	{% else %}
+	<h1>Wipeout database</h1>
+	<p>Are you sure you want to wipe the database?</p>
+	<p><a class="btn btn-lg btn-success" href="{{url_for('wipe_database', confirm=1)}}" role="button">Yes, wipe it!</a></p>
+	<p>Return to <a href="{{ url_for('welcome') }}">front page</a> or <a href="{{ url_for('load_example_data') }}">load example data</a>.</p>
+	{% endif %}
+
+</div><!-- /jumbotron -->
+{% endblock %}
+
+

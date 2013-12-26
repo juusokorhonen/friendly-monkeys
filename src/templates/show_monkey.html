@@ -1,0 +1,32 @@
+
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}Show monkey data - Friendly Monkeys{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+	<h1>{{ monkey.name }} a.k.a. {{ monkey.username }}</h1>
+	<div class="panel panel-default">
+		<!-- Default panel contents here -->
+		<div class="panel-heading">{{ monkey.name }}</div>
+		<table class="table table-striped">
+			<tr>
+				<th>UserID</th>
+				<td>{{ monkey.monkeyid }}</td>
+			</tr>
+			<tr>
+				<th>Username</th>
+				<td>{{ monkey.username }}</td>
+			</tr>
+			<tr>
+				<th>Full name</th>
+				<td>{{ monkey.name }}</td>
+			</tr>
+			<tr>
+				<th>Friends</th>
+				<td class="disabled">Not implemented yet</td>
+			</tr>
+		</table>
+	</div>
+</div><!-- /jumbotron -->
+{% endblock %}
