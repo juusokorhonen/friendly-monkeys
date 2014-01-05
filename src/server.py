@@ -170,7 +170,7 @@ def add():
     form = AddMonkeyForm(request.form)
     if (request.method == 'GET'):
         # Display the input form
-        return render_template('show_add_monkey_form.html', form=form)
+        return render_template('add_monkey.html', form=form)
     elif (request.method == 'POST' and form.validate()):
         # Form has been sent and validated
         username = form.username.data
@@ -188,7 +188,7 @@ def add():
             msg = 'Successfully added a monkey named "{name}", with username "{username}".<br />\n<a href="{entryurl}" class="alert-link">See entry</a>.'.format(name=escape(name), username=escape(username), entryurl=url_for('show', username=username))
             #print(msg)
             flash(msg)
-        return render_template('show_add_monkey_form.html', form=form) 
+        return render_template('add_monkey.html', form=form) 
     else: # request method is post, yet the form did not validate
         errormsg = 'Adding monkey failed.'
         # Append error messages to flash
@@ -197,7 +197,7 @@ def add():
                 for error in field_errors:
                     errormsg += '<br />{error}.\n'.format(error=error)
         flash(errormsg, 'error')
-        return render_template('show_add_monkey_form.html', form=form)
+        return render_template('add_monkey.html', form=form)
 
 # Make example data into the database
 @app.route('/load_example_data/')
