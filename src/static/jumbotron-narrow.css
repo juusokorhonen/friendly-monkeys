@@ -53,11 +53,12 @@ body {
 	text-align: center;
 	border-bottom: 1px solid #e5e5e5;
 }
+/* This is causing problems!
 .jumbotron .btn {
 	font-size: 21px;
 	padding: 14px 24px;
 }
-
+*/
 .jumbotron h1 {
 	font-family: 'Amatic SC', cursive;
 	font-weight: 700;

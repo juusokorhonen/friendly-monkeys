@@ -7,29 +7,94 @@
 <div class="jumbotron">
   <h1>Here come the monkeys</h1>
   {% if not monkeys %}
-  <p>There are no monkeys in the database. Please <a href="{{url_for('add')}}">add some</a>.</p>
+  <p>There are no monkeys in the database. Please <a href="{{url_for('add')}}">add some</a> or <a href="{{url_for('load_example_data')}}">load example data</a>.</p>
   {% else %}
-  <table class="table table-striped table-hover">
+  <table class="table table-condensed table-striped table-hover">
 	<thead>
 		<tr>
-			<th>ID#</th>
-			<th>Username</th>
-			<th>Name</th>
+			<th>&nbsp;</th>
+			<th>
+					{% if params.orderby == 'id' %}
+						{% if params.order == 'asc' %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=id&order=desc">ID# <span class="glyphicon glyphicon-sort-by-order"></span></a> 
+						{% else %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=id&order=asc">ID# <span class="glyphicon glyphicon-sort-by-order-alt"></span></a> 
+						{% endif %}
+					{% else %}
+					<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=id&order=asc">ID#</a>
+					{% endif %}
+			</th>
+			<th>
+					{% if params.orderby == 'username' %}
+						{% if params.order == 'asc' %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=username&order=desc">Username <span class="glyphicon glyphicon-sort-by-alphabet"></span></a>
+						{% else %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=username&order=asc">Username <span class="glyphicon glyphicon-sort-by-alphabet-alt"></span></a>
+						{% endif %}
+					{% else %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=username&order=asc">Username</a>
+					{% endif %}
+			</th>
+			<th>
+					{% if params.orderby == 'name' %}
+						{% if params.order == 'asc' %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=name&order=desc">Name <span class="glyphicon glyphicon-sort-by-alphabet"></span></a>
+						{% else %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=name&order=asc">Name <span class="glyphicon glyphicon-sort-by-alphabet-alt"></span></a>
+						{% endif %}
+					{% else %}
+						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=name&order=asc">Name</a>
+					{% endif %}
+			</th>
 			<th>Friends</th>
 			<th>Actions</th>
 		</tr>
 	</thead>
 	<tbody>
+	{% set rownum = params['offset'] %}
 	{% for monkey in monkeys %}
-		<tr>
-			<td>{{ monkey.monkeyid }}</td>
+	<tr>
+			<td><span class="text-muted">{{ rownum }}.</span></td>		
+			<td>{{ monkey.id }}</td>
 			<td>{{ monkey.username }}</td>
 			<td>{{ monkey.name }}</td>
 			<td>Not implemented</td>
-			<td><a href="#" class="btn btn-primary btn-xs" role="button">Edit</a></td>
-		</tr>
+			<td><a href="{{url_for('edit', uid=monkey.id)}}" class="btn btn-primary btn-xs" role="button">Edit</a></td>
+	</tr>
+	{% set rownum = rownum+1 %}
 	{% endfor %}	  
 	</tbody>
+	<tfoot>
+			<tr>
+					<td colspan="6" align="center">
+						<div width="100%" align="right">
+							<small>Displaying	
+							<div class="btn-group">
+									<button type="button" class="btn btn-xs btn-primary dropdown-toggle" data-toggle="dropdown">{{ params.limit }} <span class="caret"></span></button>
+								<ul class="dropdown-menu" role="menu">
+										{% for num in (5, 10, 20, 50, 100) %}
+										<li><a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ num }}&orderby={{ params.orderby }}&order={{ params.order }}">
+												{{ num }}
+										</a></li>
+										{% endfor %}
+								</ul>
+								results per page of total <strong class="text-primary">{{ params.entries }}</strong> monkeys</small>
+						</div>
+						<div width="100%" align="center">
+								{% for page in range(params.pages) %}
+									{% if params.pagenum == page %}
+										<strong>
+										{{ page+1 }}
+										</strong>
+									{% else %}
+									<a href="{{url_for('list')}}?offset={{ page*params.limit }}&limit={{ params.limit }}&orderby={{ params.orderby }}&order={{ params.order }}">{{ page+1 }}</a>
+									{% endif %}
+								{% endfor %}
+								<!-- <small>&lt;&lt; [1, 2, 3, 4, ... 10] &gt;&gt;</small> /-->
+						</div>
+					</td>
+			</tr>
+	</tfoot>
   </table>
   {% endif %}
 

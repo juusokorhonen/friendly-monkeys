@@ -13,7 +13,7 @@
 		{% endif %}
 	{% else %}
 		<h1>Load example data</h1>
-		<p><a class="btn btn-lg btn-success" href="{{url_for('load_example_data', confirm=1)}}" role="button">Yes, load the data!</a> or <a href="{{ url_for('wipe_database') }}">wipe the database</a> first.</p>
+		<p><a class="btn btn-lg btn-success" href="{{url_for('load_example_data')}}?confirm=1" role="button">Yes, load the data!</a> or <a href="{{ url_for('wipe_database') }}">wipe the database</a> first.</p>
 	{% endif %}
 
 </div><!-- /jumbotron -->

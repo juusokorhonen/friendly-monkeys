@@ -1,0 +1,64 @@
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}Edit monkey data - Friendly Monkeys{% endblock %}
+
+{% macro render_field(field, defvalue) %}
+	<tr>
+		<th>{{ field.label }}</th>
+		<td>{{ field(value=defvalue)|safe }}
+  			{% if field.errors %}
+    		<ul class="list-inline small">
+    		{% for error in field.errors %}
+      			<li class="text-warning">{{ error }}</li>
+    		{% endfor %}
+    		</ul>
+			{% endif %}
+		</td>
+  	</tr>
+{% endmacro %}
+
+{% block content %}
+<div class="jumbotron">
+	<h1>{{ monkey.name }} a.k.a. {{ monkey.username }}</h1>
+	<div class="panel panel-default">
+		<!-- Default panel contents here -->
+		<div class="panel-heading">{{ monkey.name }}</div>
+		<form role="form" method="post" action="{{url_for('edit', uid=monkey.id)}}">
+		{{ form.hidden_tag() }}
+		<table class="table table-striped">
+			<tr>
+				<th>ID#</th>
+				<td>{{ monkey.id }}</td>
+			</tr>
+			{{ render_field(form.username, monkey.username) }}
+			{{ render_field(form.name, monkey.name) }}
+			<tr>
+				<td>&nbsp;</td>
+				<td>
+					<input type="submit" value="Change values" class="btn btn-primary">
+				</td>
+			</tr>
+			<tr>
+				<th>Friends</th>
+				<td class="disabled">Not implemented yet</td>
+			</tr>
+		</table>
+		</form>
+		{% with messages = get_flashed_messages(with_categories=true) %}
+				{% if messages %}
+						{% for category, message in messages %}
+								{% if (category == 'error') %}
+								<div class="alert small alert-danger">
+										<span class="glyphicon glyphicon-remove-circle"></span>
+								{% else %}
+										<div class="alert small alert-success">
+												<span class="glyphicon glyphicon-ok-circle"></span>
+								{% endif %}
+								{{ message|safe }}
+								</div>
+						{% endfor %}
+				{% endif %}
+		{% endwith %}    
+	</div>
+</div><!-- /jumbotron -->
+{% endblock %}

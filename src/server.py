@@ -1,15 +1,22 @@
+#!/usr/bin/env python
+# vim: set fileencoding=utf-8 :
 from sqlite3 import dbapi2 as sqlite3
 from sqlite3 import IntegrityError
 from flask import Flask, render_template, url_for, g, request, session, redirect, abort, flash, escape, make_response
 from contextlib import closing
 from flask_wtf import Form
-from wtforms import TextField, validators
+from wtforms import TextField, validators, HiddenField
+from math import ceil, floor
 
 # Define WTForms classes
 class AddMonkeyForm(Form):
     """Form that adds a single monkey to the database."""
     username = TextField('Username', [validators.Length(min=4, max=25, message='Username should be 4...25 characters long')])
     name = TextField('Full name', [validators.InputRequired(message='Full name cannot be empty')])
+
+class EditMonkeyForm(AddMonkeyForm):
+	"""Form for editing a monkey in the database."""
+	uid = HiddenField('ID#', [validators.NumberRange(min=0, message='ID mismatch')])
 
 # Define custon exceptions
 class UsernameNotUniqueException(Exception):
@@ -77,25 +84,86 @@ def welcome():
 
 @app.route('/list')
 def list():
-    """List monkeys from the database."""
-    result = query_db('SELECT monkeyid,username,name FROM monkeys')
-    if (result is None):
-        # No monkeys were returned
-        return render_template('list_monkeys.html')
-    else:
-        # There are monkeys
-        return render_template('list_monkeys.html', monkeys=result)
+	"""List monkeys from the database."""
+	# Get list parameters
+	#for arg in request.args:
+	#		print(arg),
+	#		print(" " + request.args.get(arg))
+	lim = int(request.args.get('limit', 10))
+	if (lim < 1):
+		lim = 1 # Fall back to smallest possible limit
+	off = int(request.args.get('offset', 0))
+	if (off < 0):
+		off = 0 # Fall back to 0 offset
+	orderby = request.args.get('orderby', 'id')
+	if (orderby not in ['id', 'username', 'name']):
+		orderby = 'id' # Fall back to id, if value is strange
+	order = request.args.get('order', 'asc')
+	if (order not in ['asc', 'desc']):
+		order = 'asc' # Fall back to ascending order
+	# Make the database query
+	numresults = query_db('SELECT COUNT(id) AS entries FROM monkeys', one=True)
+	if (numresults['entries'] == 0):
+		# No monkeys were returned
+		return render_template('list_monkeys.html')
+	else:
+		# There are monkeys
+		result = query_db('SELECT id,username,name FROM monkeys ORDER BY {orderby} {order} LIMIT ? OFFSET ?'.format(orderby=orderby, order=order), [lim, off])
+		pages = int(ceil(numresults['entries']/float(lim)))
+		thispage = int(floor(off/float(lim)))
+		params = dict(limit=lim, offset=off, orderby=orderby, order=order, entries=numresults['entries'], pages=pages, pagenum=thispage)
+		return render_template('list_monkeys.html', monkeys=result, params=params)
 
 @app.route('/show/<username>')
 def show(username):
     """Show the monkey profile, which is identified by username."""
-    result = query_db('SELECT monkeyid,username,name FROM monkeys WHERE username=?', args=[username], one=True)
+    result = query_db('SELECT id,username,name FROM monkeys WHERE username=?', args=[username], one=True)
     #print(result)
     if (result is None):
         # Monkey search failed, so give 404
         abort(404)
         #return make_response(render_template('filenotfound.html'), 404)
     return render_template('show_monkey.html', monkey=result)
+
+@app.route('/edit/<uid>', methods=['GET', 'POST'])
+def edit(uid):
+	"""Shows the edit form and edits a monkey in the database."""
+	# Results are in, so continue
+	form = EditMonkeyForm(request.form)
+	if (request.method == 'GET'):
+		result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
+		if (result is None):
+			# Monkey search failed, so give 404
+			abort(404)
+		# Display the edit form
+		return render_template('edit_monkey.html', form=form, monkey=result)
+	elif (request.method == 'POST' and form.validate()):
+		# Form was submitted and validated
+		username = form.username.data
+		name = form.name.data
+		uid = form.uid.data
+		try:
+			query_db('UPDATE monkeys SET username=?,name=? WHERE id=?', (username, name, uid), one=True)
+		except: 
+			msg = 'Updating monkey failed.' 
+			flash(msg, 'error')
+		else:
+			get_db().commit() # Commit changes
+			# Make a note on the next page
+			msg = 'Successfully updated monkey with username "{username}.'.format(username=escape(username))
+			flash(msg)
+			# Now refresh the monkey (this could be avoided, yet it's easier this way)
+			result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
+			if (result is None):
+				abort(404)
+			return render_template('edit_monkey.html', form=form, monkey=result)
+	else:
+		# Something went wrong (form did not validate)
+		result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
+		if (result is None):
+			abort(404)
+		flash("Errors in form, please correct.", 'error')
+		return render_template('edit_monkey.html', form=form, monkey=result)
 
 @app.route('/add', methods=['GET', 'POST'])
 def add():
@@ -132,46 +200,67 @@ def add():
         return render_template('show_add_monkey_form.html', form=form)
 
 # Make example data into the database
-@app.route('/load_example_data/', defaults={'confirm': 0})
-@app.route('/load_example_data/confirm/<int:confirm>')
-def load_example_data(confirm):
-    if (confirm == 1):
-        values = [('rlemur', 'Ringo the Lemur'), 
-                    ('macaq11', 'Madison Macaque'), 
-                    ('ggorilla', 'Gonzo Gorilla'), 
-                    ('ltamarin', 'Lionel Tamarin'), 
-                    ('indira', 'Dira Indri'),
-                    ('patas', 'Patas Monkey'),
-                    ('pansy', 'Pansy the Chimpanzee'),
-                    ('hanu', 'Han Hanuman'),
-                    ('BigSuperStar', 'Titi Orangutan'),
-                    ('darwin', 'Charles Darwin'),
-                    ('wpooh', 'Winnie the Pooh'),
-                    ('bgorilla', 'Busta Gorilla'),
-                    ('ladidas', 'Larry Adidas'),
-                    ('MojoJojo', 'Jojo Lemur'),
-                    ('ghost84', 'Ghostly Ape'),
-                    ('mmanda', 'Mary Mandarin'),
-                    ('kkong', 'King Kong')]
-        try:
-            get_db().executemany('INSERT INTO monkeys (username, name) VALUES (?, ?)', values)
-        except IntegrityError as e:
-            return render_template('load_example_data.html', confirm=True, success=False)
-        else:
-            get_db().commit() # Make the changes
-            return render_template('load_example_data.html', confirm=True, success=True)
-    else:
-        return render_template('load_example_data.html', confirm=False)
+@app.route('/load_example_data/')
+def load_example_data():
+	confirm = int(request.args.get('confirm', 0))
+	if (confirm == 1):
+		if (insert_example_data()):	
+			# Success
+			return render_template('load_example_data.html', confirm=True, success=True)
+		else:
+			# Failed
+			return render_template('load_example_data.html', confirm=True, success=False)
+	else:
+		# Show confirm dialog
+		return render_template('load_example_data.html', confirm=False)
+
+def insert_example_data():
+	values = [('rlemur', 'Ringo the Lemur'), 
+		('macaq11', 'Madison Macaque'), 
+		('ggorilla', 'Gonzo Gorilla'), 
+		('ltamarin', 'Lionel Tamarin'), 
+		('indira', 'Dira Indri'),
+		('patas', 'Patas Monkey'),
+		('pansy', 'Pansy the Chimpanzee'),
+		('hanu', 'Han Hanuman'),
+		('BigSuperStar', 'Titi Orangutan'),
+		('darwin', 'Charles Darwin'),
+		('wpooh', 'Winnie the Pooh'),
+		('bgorilla', 'Busta Gorilla'),
+		('ladidas', 'Larry Adidas'),
+		('MojoJojo', 'Jojo Lemur'),
+		('ghost84', 'Ghostly Ape'),
+		('mmanda', 'Mary Mandarin'),
+		('kkong', 'King Kong'),
+		('mchipm', 'Madonna Chimpanzee'),
+		('mhanuman', 'Mark Hanuman'),
+		('ftamarin', 'Fredick Tamarin'),
+		('llemur', 'Leopold von Lemur'),
+		('abraham', 'Abraham Macaque'),
+		('mindri', 'Marilyn Indri'),
+		('ape99', 'Abe Ape'),
+		('ManMan', 'Manila Mandarin'),
+		('cheetah', 'Cheetah Monkey'), 
+		('tarzan', u'John Weissmüller'), 
+		('mark', 'Mark Mark')]
+	try:
+		get_db().executemany('INSERT INTO monkeys (username, name) VALUES (?, ?)', values)
+	except IntegrityError as e:
+		return False
+	else:
+		# Now actually "save the changes"
+		get_db().commit()
+		return True
 
 # Wipe the database
-@app.route('/wipe_database/', defaults={'confirm': 0})
-@app.route('/wipe_database/confirm/<int:confirm>')
-def wipe_database(confirm):
-    if (confirm == 1): # Wipeout confirmed
-        init_db() # Perhaps implement another method for a "soft" wipeout
-        return render_template('wipe_database.html', confirm=True)
-    else:
-        return render_template('wipe_database.html', confirm=False)
+@app.route('/wipe_database/')
+def wipe_database():
+	confirm = int(request.args.get('confirm', 0))
+	if (confirm == 1): # Wipeout confirmed
+		init_db() # Perhaps implement another method for a "soft" wipeout
+		return render_template('wipe_database.html', confirm=True)
+	else:
+		return render_template('wipe_database.html', confirm=False)
 
 # Error handling
 @app.errorhandler(404)
@@ -180,6 +269,6 @@ def filenotfound(e):
 
 # Run the application from command line
 if __name__ == '__main__':
-    init_db()	
-    app.run()
+	init_db()	
+	app.run()
 
