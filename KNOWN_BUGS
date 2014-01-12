@@ -1,0 +1,6 @@
+KNOWN BUGS
+
+- Editing a monkey fails due to some database reason. Investigate the SQL queries.
+
+
+

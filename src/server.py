@@ -144,19 +144,19 @@ def edit(uid):
 		uid = form.uid.data
 		try:
 			query_db('UPDATE monkeys SET username=?,name=? WHERE id=?', (username, name, uid), one=True)
+                        get_db().commit()
 		except: 
 			msg = 'Updating monkey failed.' 
 			flash(msg, 'error')
 		else:
-			get_db().commit() # Commit changes
 			# Make a note on the next page
 			msg = 'Successfully updated monkey with username "{username}.'.format(username=escape(username))
 			flash(msg)
-			# Now refresh the monkey (this could be avoided, yet it's easier this way)
-			result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
-			if (result is None):
-				abort(404)
-			return render_template('edit_monkey.html', form=form, monkey=result)
+                # Now refresh the monkey (this could be avoided, yet it's easier this way)
+                result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
+                if (result is None):
+                        abort(404)
+                return render_template('edit_monkey.html', form=form, monkey=result)
 	else:
 		# Something went wrong (form did not validate)
 		result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)

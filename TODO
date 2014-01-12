@@ -1,0 +1,25 @@
+TODO LIST IN ORDER OF IMPORTANCE
+
+ITEM				ESTIMATED WORK LOAD		STATUS
+
+1. Working interface		5				
+ - Add								DONE
+ - Delete							NOT IMPLEMENTED
+ - Edit								WORK IN PROGRESS
+ - List								DONE
+ - Show								DONE
+
+2. Friends capabilities		20
+ - Add friend							NOT IMPLEMENTED
+ - Remove friend						NOT IMPLEMENTED
+ - Accept friend						NOT IMPLEMENTED
+ - List								NOT IMPLEMENTED
+ - Friends database						NOT IMPLEMENTED
+
+3. Database			10
+ - SQLite3							USING
+ - PostgreSQL							NOT IMPLEMENTED
+ - SQLAlchemy							NOT IMPLEMENTED
+
+4. Deploy to Heroku		2				NOT IMPLEMENTED
+
