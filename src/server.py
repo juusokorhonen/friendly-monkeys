@@ -128,8 +128,8 @@ def show(username):
 @app.route('/edit/<uid>', methods=['GET', 'POST'])
 def edit(uid):
 	"""Shows the edit form and edits a monkey in the database."""
+	form = EditMonkeyForm(request.form, uid=uid)
 	# Results are in, so continue
-	form = EditMonkeyForm(request.form)
 	if (request.method == 'GET'):
 		result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
 		if (result is None):
@@ -142,6 +142,8 @@ def edit(uid):
 		username = form.username.data
 		name = form.name.data
 		uid = form.uid.data
+		form.uid = uid
+		print("{}, {}, {}".format(username, name, uid))
 		try:
 			query_db('UPDATE monkeys SET username=?,name=? WHERE id=?', (username, name, uid), one=True)
                         get_db().commit()
