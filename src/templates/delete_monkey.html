@@ -1,0 +1,20 @@
+{% extends "jumbotron-narrow.html" %}
+
+{% block title %}Delete a monkey - Friendly Monkeys{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <h1>Delete a monkey</h1>
+	{% if not confirm %}
+	<p>Are you sure you want to delete monkey named {{ monkey['name'] }}?</p>
+	<p><a class="btn btn-lg btn-success" href="{{url_for('delete', uid=monkey.id, confirm=1)}}" role="button">Yes, delete!</a></p>
+	{% else %}
+		{% if success %}
+		<p>Successfully deleted monkey named {{ monkey.name }}. Return to <a href="{{url_for('list')}}">monkey listing</a>.</p>
+		{% else %}
+		<p>Deleting monkey failed!</p>
+		{% endif %}
+	{% endif %}
+
+</div><!-- /jumbotron -->
+{% endblock %}
