@@ -7,6 +7,7 @@ from contextlib import closing
 from flask_wtf import Form
 from wtforms import TextField, validators, HiddenField
 from math import ceil, floor
+from random import randint, sample
 
 # Define WTForms classes
 class AddMonkeyForm(Form):
@@ -17,10 +18,6 @@ class AddMonkeyForm(Form):
 class EditMonkeyForm(AddMonkeyForm):
 	"""Form for editing a monkey in the database."""
 	uid = HiddenField('ID#', [validators.NumberRange(min=0, message='ID mismatch')])
-
-# Define custon exceptions
-class UsernameNotUniqueException(Exception):
-    pass
 
 # Create application
 app = Flask(__name__)
@@ -59,12 +56,9 @@ def get_db():
 # Query the database
 def query_db(query, args=(), one=False):
     """Makes a query to the database and returns the results."""
-    try:
-        cur = get_db().execute(query, args)
-        rv = cur.fetchall()
-        cur.close()
-    except IntegrityError as e:
-        raise UsernameNotUniqueException()
+    cur = get_db().execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
     return (rv[0] if rv else None) if one else rv
 
 @app.teardown_request
@@ -117,13 +111,41 @@ def list():
 @app.route('/show/<username>')
 def show(username):
     """Show the monkey profile, which is identified by username."""
-    result = query_db('SELECT id,username,name FROM monkeys WHERE username=?', args=[username], one=True)
+    monkey = query_db('SELECT id,username,name FROM monkeys WHERE username=?', args=[username], one=True)
+
     #print(result)
-    if (result is None):
+    if (len(monkey) == 0):
         # Monkey search failed, so give 404
         abort(404)
         #return make_response(render_template('filenotfound.html'), 404)
-    return render_template('show_monkey.html', monkey=result)
+
+    # Find friendships initiated by this monkey
+    fs_init = query_db('SELECT id2 FROM friendships WHERE id1=?', args=[result['id']])
+    num_init = len(fs_init)
+    # Find friendships received by this monkey
+    fs_rec = query_db('SELECT id1 FROM friendships WHERE id2=?', args=[result['id']])
+    num_rec = len(fs_rec)
+    # Parse these into lists
+    fs_init_list = [x['id2'] for x in fs_init]
+    fs_rec_list  = [x['id1'] for x in fs_rec]
+    fs_list = list(set(fs_init_list.extend(fs_rec_list)))
+    # Check for accepted/active friendships
+    fs_active_list = [x for x in fs_init_list if x in fs_rec_list]
+    num_active = len(fs_active_list)
+    # List of initiated, but not accepted friendships
+    fs_init_not_accepted_list = [x for x in fs_init_list if x not in fs_active_list]
+    num_init_not_accepted = len(fs_init_not_accepted_list)
+    # List of received, but not accepted friendships
+    fs_rec_not_accepted_list = [x for x in fs_rec_list if x not in fs_active_list]
+    num_rec_not_accepted = len(fs_rec_not_accepted_list)
+    # Put these into tuples
+    fs = (fs_active_list, fs_init_not_accepted_list, fs_rec_not_accepted_list)
+    numfs = (num_active, num_init_not_accepted, num_rec_not_accepted)
+
+    # Find the names for the friend-monkeys
+    fr_names = query_db('SELECT id,username,name FROM monkeys WHERE id in (?)', args=[fs_list])
+
+    return render_template('show_monkey.html', monkey=monkey, fs=fs, numfs=numfs, fr_names=fr_names)
 
 @app.route('/edit/<uid>', methods=['GET', 'POST'])
 def edit(uid):
@@ -156,13 +178,13 @@ def edit(uid):
 			flash(msg)
                 # Now refresh the monkey (this could be avoided, yet it's easier this way)
                 result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
-                if (result is None):
+                if (len(result) == 0):
                         abort(404)
                 return render_template('edit_monkey.html', form=form, monkey=result)
 	else:
 		# Something went wrong (form did not validate)
 		result = query_db('SELECT id,username,name FROM monkeys WHERE id=?', args=[uid], one=True)
-		if (result is None):
+		if (len(result) == 0):
 			abort(404)
 		flash("Errors in form, please correct.", 'error')
 		return render_template('edit_monkey.html', form=form, monkey=result)
@@ -181,7 +203,7 @@ def add():
         # !!! Using prepared statements here, yet the safety should be checked
         try:
             query_db('INSERT INTO monkeys (username, name) VALUES (?, ?)', (username, name), one=True)
-        except UsernameNotUniqueException:
+        except IntegrityError as e:
             msg += 'Adding monkey failed. Username "{username}" already in use.'.format(username=escape(username))
             flash(msg, 'error')
         else:
@@ -200,6 +222,30 @@ def add():
                     errormsg += '<br />{error}.\n'.format(error=error)
         flash(errormsg, 'error')
         return render_template('add_monkey.html', form=form)
+
+@app.route('/delete/<uid>')
+def delete(uid):
+    confirm = int(request.args.get('confirm', 0))
+    if (uid is None):
+        abort(404)
+    if (confirm == 1):
+        try:
+            result = query_db('SELECT id,name,username FROM monkeys WHERE id=?', [uid], one=True)
+            if (result is None):
+                raise IntegrityError()
+            query_db('DELETE FROM monkeys WHERE id=?', [uid])
+            get_db().commit()
+        except IntegrityError as e:
+            return render_template('delete_monkey.html', confirm=True, success=False, monkey=result)
+        else:
+            return render_template('delete_monkey.html', confirm=True, success=True, monkey=result)
+    else:
+        result = query_db('SELECT id,name,username FROM monkeys WHERE id=?', [uid], one=True)
+        #print(result)
+        if (len(result) == 0):
+            abort(404)
+        return render_template('delete_monkey.html', confirm=False, monkey=result, uid=uid)
+        
 
 # Make example data into the database
 @app.route('/load_example_data/')
@@ -252,7 +298,29 @@ def insert_example_data():
 	else:
 		# Now actually "save the changes"
 		get_db().commit()
-		return True
+                return insert_example_friendship_data()
+
+def insert_example_friendship_data():
+    result = query_db('SELECT COUNT(id) as entries FROM monkeys', one=True)
+    if (len(result) != 1):
+        return False
+    nummonkeys = int(result['entries'])
+    values = []
+    for i in xrange(nummonkeys):
+        numfriends = randint(2,nummonkeys-1)
+        friendslist = sample(xrange(nummonkeys), numfriends)
+        if (i in friendslist): # Remove the monkey itself, if present
+            friendslist.pop(friendslist.index(i))
+        values.extend(zip([i for x in friendslist], friendslist))
+    #print(values)  
+    try:
+        get_db().executemany('INSERT INTO friendships (id1, id2) VALUES (?, ?)', values)
+    except IntegrityError as e:
+        return False
+    else:
+        get_db().commit()
+        return True
+    return True
 
 # Wipe the database
 @app.route('/wipe_database/')

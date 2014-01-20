@@ -59,7 +59,10 @@
 			<td>{{ monkey.username }}</td>
 			<td>{{ monkey.name }}</td>
 			<td>Not implemented</td>
-			<td><a href="{{url_for('edit', uid=monkey.id)}}" class="btn btn-primary btn-xs" role="button">Edit</a></td>
+			<td>
+				<a href="{{url_for('edit', uid=monkey.id)}}" class="btn btn-primary btn-xs" role="button">Edit</a>
+				<a href="{{url_for('delete', uid=monkey.id)}}" class="btn btn-danger btn-xs" role="button">Delete</a>
+			</td>
 	</tr>
 	{% set rownum = rownum+1 %}
 	{% endfor %}	  
