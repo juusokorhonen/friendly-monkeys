@@ -68,9 +68,39 @@ def teardown_request(exception):
     if db is not None:
         db.close()
 	
+# Helper methods
+def sql_in_to_or(sqlvar, args, name="arg" ):
+    '''
+    convert: sqlvar IN (args) to:
+    sqlvar=:arg0 OR sqlvar=:arg1 ....
 
+    returns "new query", dict of args
+ 
+    To use in execute:
 
-# Define routes
+    Q = 'select * from table where (%(where)s) and time > :ts'
+    iq, iq_args = sql_in_to_or( "table.id", range(5), name='id')
+    placeholders = dict(ts=12323425)
+    conn.execute(Q % dict(where=iq), placeholders.update(iq_args))     
+    '''
+    q_parts = list()
+    q_args = dict()
+    for (ii, arg) in enumerate(args):
+        argname = "%s%i" % (name, ii)
+        q_parts.append( "%s=:%s" % (sqlvar,argname) )
+        q_args[argname] = arg
+    query =  " OR ".join( q_parts )
+    return (query, q_args)
+
+def make_in_query(arg, values):
+    query = ""
+    for i in xrange(len(values)):
+        query += '{arg}=?'.format(arg=arg)
+        if (i < len(values)-1):
+            query += ' OR '
+    return query
+
+# routes
 
 @app.route('/')
 def welcome():
@@ -80,9 +110,6 @@ def welcome():
 def list():
 	"""List monkeys from the database."""
 	# Get list parameters
-	#for arg in request.args:
-	#		print(arg),
-	#		print(" " + request.args.get(arg))
 	lim = int(request.args.get('limit', 10))
 	if (lim < 1):
 		lim = 1 # Fall back to smallest possible limit
@@ -106,46 +133,144 @@ def list():
 		pages = int(ceil(numresults['entries']/float(lim)))
 		thispage = int(floor(off/float(lim)))
 		params = dict(limit=lim, offset=off, orderby=orderby, order=order, entries=numresults['entries'], pages=pages, pagenum=thispage)
-		return render_template('list_monkeys.html', monkeys=result, params=params)
+
+                # Find friends
+                fr_ids = [x['id'] for x in result]
+                # TODO: Write a database query here!
+                all_frshps = query_db('SELECT nodeid,id1,id2 FROM friendships WHERE {} OR {}'.format(make_in_query('id1',fr_ids),make_in_query('id2',fr_ids)), args=fr_ids+fr_ids)
+                monkeys = []
+                for monkey in result:
+                    frshps_init = [x['id2'] for x in all_frshps if x['id1'] == monkey['id']]
+                    frshps_recd = [x['id1'] for x in all_frshps if x['id2'] == monkey['id']]
+                    frshps_act  = [x for x in frshps_init if x in frshps_recd]
+                    frshps_rec  = [x for x in frshps_recd if x not in frshps_act]
+                    frshps_req  = [x for x in frshps_init if x not in frshps_act]
+                    num_act = len(frshps_act)
+                    num_rec = len(frshps_rec)
+                    num_req = len(frshps_req)
+                    monkeys.append({'id':monkey['id'],'name':monkey['name'],'username':monkey['username'],'act':num_act,'rec':num_rec,'req':num_req})
+
+		return render_template('list_monkeys.html', monkeys=monkeys, params=params)
 
 @app.route('/show/<username>')
 def show(username):
     """Show the monkey profile, which is identified by username."""
     monkey = query_db('SELECT id,username,name FROM monkeys WHERE username=?', args=[username], one=True)
 
-    #print(result)
-    if (len(monkey) == 0):
+    if (monkey is None):
         # Monkey search failed, so give 404
         abort(404)
         #return make_response(render_template('filenotfound.html'), 404)
 
-    # Find friendships initiated by this monkey
-    fs_init = query_db('SELECT id2 FROM friendships WHERE id1=?', args=[result['id']])
-    num_init = len(fs_init)
-    # Find friendships received by this monkey
-    fs_rec = query_db('SELECT id1 FROM friendships WHERE id2=?', args=[result['id']])
-    num_rec = len(fs_rec)
-    # Parse these into lists
-    fs_init_list = [x['id2'] for x in fs_init]
-    fs_rec_list  = [x['id1'] for x in fs_rec]
-    fs_list = list(set(fs_init_list.extend(fs_rec_list)))
-    # Check for accepted/active friendships
-    fs_active_list = [x for x in fs_init_list if x in fs_rec_list]
-    num_active = len(fs_active_list)
-    # List of initiated, but not accepted friendships
-    fs_init_not_accepted_list = [x for x in fs_init_list if x not in fs_active_list]
-    num_init_not_accepted = len(fs_init_not_accepted_list)
-    # List of received, but not accepted friendships
-    fs_rec_not_accepted_list = [x for x in fs_rec_list if x not in fs_active_list]
-    num_rec_not_accepted = len(fs_rec_not_accepted_list)
-    # Put these into tuples
-    fs = (fs_active_list, fs_init_not_accepted_list, fs_rec_not_accepted_list)
-    numfs = (num_active, num_init_not_accepted, num_rec_not_accepted)
+    # Check which action to perform
+    action = request.args.get('action', 'view')
+    if (action not in ['view', 'accept', 'reject', 'cancel', 'defriend']):
+        action = 'view'
 
-    # Find the names for the friend-monkeys
-    fr_names = query_db('SELECT id,username,name FROM monkeys WHERE id in (?)', args=[fs_list])
+    # There are four possibilities: accept friend request, 
+    # reject friend request, unfriend, and cancel friend request
+    
+    if (action != 'view'):
+        # First check for the second username
+        username2 = request.args.get('username2', None)
+        if (username2 is None):
+            flash("Error occurred. Username was not defined properly.", 'error')
+        else:
+            monkey2 = query_db('SELECT id,username,name FROM monkeys WHERE username=?', args=[username2], one=True)
+            if (monkey2 is None):
+                flash("Error occurred. No such monkey exists.", 'error')
+            else:
+                # START ACCEPT
+                if (action == 'accept'):
+                    # Find friendships initiated by the second monkey
+                    req = query_db('SELECT COUNT(nodeid) AS entries,nodeid FROM friendships WHERE id1=? AND id2=?', args=[monkey2['id'], monkey['id']], one=True)
+                    if (req['entries'] != 1):
+                        flash("Error occurred. Cross-check from database failed.", 'error')
+                    else: 
+                        # Check that the friendships does not exist already
+                        rec = query_db('SELECT COUNT(id1) AS entries FROM friendships WHERE id1=? AND id2=?', args=[monkey['id'], monkey2['id']], one=True)[0]
+                        if (rec != 0):
+                            flash("Error occurred. The friendships is already acceptedi.", 'error')
+                        else:
+                            # Now update the friendships database to accept
+                            try:
+                                query_db('INSERT INTO friendships (id1, id2) VALUES (?, ?)', args=[monkey['id'], monkey2['id']])
+                            except IntegrityError as e:
+                                flash("Error occurred. Could not insert values into database", 'error')
+                            else:
+                                get_db().commit() # Commit changes
+                                flash("Friendship accepted!")
+                # END ACCEPT
+                # START REJECT
+                elif (action == 'reject'):
+                    # Find the friendships request to be terminated
+                    req = query_db('SELECT COUNT(nodeid) AS entries,nodeid FROM friendships WHERE id1=? AND id2=?', args=[monkey2['id'], monkey['id']], one=True)
+                    if (req['entries'] != 1):
+                        flash("Error occurred. Cross-check from database failed.", 'error')
+                    else:
+                        # Now delete the request from the database
+                        try:
+                            query_db("DELETE FROM friendships WHERE nodeid=?", args=[req['nodeid']])
+                        except IntegrityError as e:
+                            flash("Error occurred. Could not delete the friendships request.", 'error')
+                        else:
+                            get_db().commit()
+                            flash("Friendships request rejected.")
+                # END REJECT
+                # START CANCEL
+                elif (action == 'cancel'):
+                    # Find the friendship request to be cancelled
+                    req = query_db('SELECT COUNT(nodeid) AS entries,nodeid FROM friendships WHERE id1=? AND id2=?', args=[monkey['id'], monkey2['id']], one=True)
+                    if (req['entries'] != 1):
+                        flash("Error occurred. Cross-check from database failed.", 'error')
+                    else:
+                        # Now delete the request
+                        try:
+                            query_db("DELETE FROM friendships WHERE nodeid=?", args=[req['nodeid']])
+                        except IntegrityError as e:
+                            flash("Error occurred. Could not delete the friendship request.", 'error')
+                        else:
+                            get_db().commit()
+                            flash("Friendship request cancelled.")
+                # END CANCEL
+                # START DEFRIEND
+                elif (action == 'defriend'):
+                    # Find the friendship requests to be cancelled
+                    req = query_db('SELECT nodeid FROM friendships WHERE (id1=? AND id2=?) OR (id1=? AND id2=?)', args=[monkey['id'], monkey2['id'], monkey2['id'], monkey['id']])
+                    if (len(req) != 2):
+                        flash("Error occurred. Cross-check from database failed.", 'error')
+                    else:
+                        # Now delete the requests
+                        try:
+                            query_db('DELETE FROM friendships WHERE nodeid=? OR nodeid=?', args=[req[0]['nodeid'], req[1]['nodeid']])
+                        except IntegrityError as e:
+                            flash("Error occurred. Could not delete the friendship.", 'error')
+                        else:
+                            get_db().commit()
+                            flash("Friendship ended.")
+                # END DEFRIEND
 
-    return render_template('show_monkey.html', monkey=monkey, fs=fs, numfs=numfs, fr_names=fr_names)
+    # RENDER THE PAGE
+    query1 = "SELECT F.id2 AS id,M2.name AS name,M2.username AS username FROM monkeys M1, monkeys M2, friendships F WHERE F.id1=M1.id AND F.id2=M2.id AND (F.id1=?)"
+    ids_init = query_db(query1, args=[monkey['id']])
+    query2 = "SELECT F.id1 AS id,M1.name AS name,M1.username AS username FROM monkeys M1, monkeys M2, friendships F WHERE F.id1=M1.id AND F.id2=M2.id AND (F.id2=?)"
+    ids_recd = query_db(query2, args=[monkey['id']])
+    #fr_results = query_db(query, args=[monkey['id'], monkey['id']])
+    #ids_init = [{'id':x['initid'],'name':x['initname'],'username':x['initusername']} for x in fr_results]
+    #ids_recd  = [{'id':x['recid'], 'name':x['recname'], 'username':x['recusername']} for x in fr_results]
+    # Create lists of unique items
+    ids_act = [x for x in ids_init if x in ids_recd]
+    ids_act.sort(key=lambda x: x['name'])
+    ids_rec = [x for x in ids_recd if x not in ids_init]
+    ids_rec.sort(key=lambda x: x['name'])
+    ids_req = [x for x in ids_init if x not in ids_recd]
+    ids_req.sort(key=lambda x: x['name'])
+
+    num_act = len(ids_act)
+    num_req = len(ids_req)
+    num_rec = len(ids_rec)
+
+    return render_template('show_monkey.html', monkey=monkey, num_act=num_act, num_req=num_req, num_rec=num_rec, fr_act=ids_act, fr_req=ids_req, fr_rec=ids_rec)
 
 @app.route('/edit/<uid>', methods=['GET', 'POST'])
 def edit(uid):
@@ -165,7 +290,6 @@ def edit(uid):
 		name = form.name.data
 		uid = form.uid.data
 		form.uid = uid
-		print("{}, {}, {}".format(username, name, uid))
 		try:
 			query_db('UPDATE monkeys SET username=?,name=? WHERE id=?', (username, name, uid), one=True)
                         get_db().commit()
@@ -210,7 +334,6 @@ def add():
             get_db().commit() # Commit changes
             # Make a note on the next page
             msg = 'Successfully added a monkey named "{name}", with username "{username}".<br />\n<a href="{entryurl}" class="alert-link">See entry</a>.'.format(name=escape(name), username=escape(username), entryurl=url_for('show', username=username))
-            #print(msg)
             flash(msg)
         return render_template('add_monkey.html', form=form) 
     else: # request method is post, yet the form did not validate
@@ -241,11 +364,9 @@ def delete(uid):
             return render_template('delete_monkey.html', confirm=True, success=True, monkey=result)
     else:
         result = query_db('SELECT id,name,username FROM monkeys WHERE id=?', [uid], one=True)
-        #print(result)
         if (len(result) == 0):
             abort(404)
         return render_template('delete_monkey.html', confirm=False, monkey=result, uid=uid)
-        
 
 # Make example data into the database
 @app.route('/load_example_data/')
@@ -312,7 +433,6 @@ def insert_example_friendship_data():
         if (i in friendslist): # Remove the monkey itself, if present
             friendslist.pop(friendslist.index(i))
         values.extend(zip([i for x in friendslist], friendslist))
-    #print(values)  
     try:
         get_db().executemany('INSERT INTO friendships (id1, id2) VALUES (?, ?)', values)
     except IntegrityError as e:
@@ -339,6 +459,6 @@ def filenotfound(e):
 
 # Run the application from command line
 if __name__ == '__main__':
-	init_db()	
+	#init_db()	
 	app.run()
 

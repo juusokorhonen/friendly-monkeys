@@ -32,6 +32,8 @@
 	  <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
 	    <li><a href="{{url_for('list')}}">List monkeys</a></li>
 	    <li><a href="{{url_for('add')}}">Add monkey</a></li>
+	    <li><a href="{{url_for('load_example_data')}}">Load example data</a></li>
+	    <li><a href="{{url_for('wipe_database')}}">Wipe database</a></li>
 	  </ul>
         </ul>
 	<h3><span class="glyphicon glyphicon-heart-empty" style="color:#ff33cc"></span> Friendly Monkeys</h3>
@@ -67,9 +69,10 @@
     </div> <!-- /container -->
 
     <!-- Include jquery and bootstrap javascript extensions -->
+{% block scripts %}
     <script src="{{url_for('static', filename='dist/js/jquery-2.0.3.js')}}"></script>
     <script src="{{url_for('static', filename='dist/js/bootstrap.min.js')}}"></script>
-
+{% endblock %}
   </body>
 </html>
 

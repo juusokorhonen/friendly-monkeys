@@ -22,7 +22,7 @@
 	<h1>Edit monkey</h1>
 	<div class="panel panel-default">
 		<!-- Default panel contents here -->
-		<div class="panel-heading">{{ monkey.name }}</div>
+		<div class="panel-heading"><a href="{{url_for('show', username=monkey.username)}}">{{ monkey.name }}</a></div>
 		<form role="form" method="post" action="{{url_for('edit', uid=monkey.id)}}">
 		{{ form.hidden_tag() }}
 		<table class="table table-striped">
@@ -37,10 +37,6 @@
 				<td>
 					<input type="submit" value="Change values" class="btn btn-primary">
 				</td>
-			</tr>
-			<tr>
-				<th>Friends</th>
-				<td class="disabled">Not implemented yet</td>
 			</tr>
 		</table>
 		</form>

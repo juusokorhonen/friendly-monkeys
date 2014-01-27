@@ -58,8 +58,11 @@
 			<td>{{ monkey.id }}</td>
 			<td>{{ monkey.username }}</td>
 			<td>{{ monkey.name }}</td>
-			<td>Not implemented</td>
 			<td>
+				<span style="color:green;">{{ monkey.act }}</span>/<span style="color:orange;">{{ monkey.rec }}</span>/<span style="color:red;">{{ monkey.req }}</span>
+			</td>
+			<td>
+				<a href="{{url_for('show', username=monkey.username)}}" class="btn btn-primary btn-xs" role="button">Show</a>
 				<a href="{{url_for('edit', uid=monkey.id)}}" class="btn btn-primary btn-xs" role="button">Edit</a>
 				<a href="{{url_for('delete', uid=monkey.id)}}" class="btn btn-danger btn-xs" role="button">Delete</a>
 			</td>

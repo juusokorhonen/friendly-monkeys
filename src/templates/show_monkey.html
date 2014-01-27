@@ -1,17 +1,65 @@
 
 {% extends "jumbotron-narrow.html" %}
 
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+	$(function () {
+		$("[rel='tooltip']").tooltip();
+	});
+</script>
+<script>
+	$(function () {
+		$("[rel='popover']").popover();
+	});
+</script>
+<!-- <script>
+	$('#frActiveTab a').click(function (e) {
+			e.preventDefault()
+			$(this).tab('show')
+	})
+	$('#frRequestedTab a').click(function (e) {
+			e.preventDefault()
+			$(this).tab('show')
+	})
+	$('#frReceivedTab a').click(function (e) {
+			e.preventDefault()
+			$(this).tab('show')
+	})
+</script> -->
+{% endblock %}
+
 {% block title %}Show monkey data - Friendly Monkeys{% endblock %}
 
 {% block content %}
 <div class="jumbotron">
-	<h1>{{ monkey.name }} a.k.a. {{ monkey.username }}</h1>
+	<h1>Show monkey</h1>
 	<div class="panel panel-default">
 		<!-- Default panel contents here -->
-		<div class="panel-heading">{{ monkey.name }}</div>
+		<div class="panel-heading">{{ monkey.name }}
+			<a href="{{ url_for('edit', uid=monkey.id) }}" role="button" class="btn btn-primary btn-xs active">Edit</a>
+			<a href="{{ url_for('delete', uid=monkey.id) }}" role="button" class="btn btn-danger btn-xs active">Delete</a>
+		</div>
+
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				{% for category, message in messages %}
+					{% if (category == 'error') %}
+						<div class="alert small alert-danger">
+							<span class="glyphicon glyphicon-remove-circle"></span>
+					{% else %}
+						<div class="alert small alert-success">
+							<span class="glyphicon glyphicon-ok-circle"></span>
+					{% endif %}
+					{{ message|safe }}
+					</div>
+				{% endfor %}
+			{% endif %}
+		{% endwith %}   
+
 		<table class="table table-striped">
 			<tr>
-				<th>UserID</th>
+				<th>ID#</th>
 				<td>{{ monkey.id }}</td>
 			</tr>
 			<tr>
@@ -24,9 +72,70 @@
 			</tr>
 			<tr>
 				<th>Friends</th>
-				<td class="disabled">Not implemented yet</td>
+				<td>
+					<ul class="nav nav-tabs">
+						<li class="active"><a href="#frActiveTab" data-toggle="tab">Active ({{ num_act }})</a></li>
+						<li><a href="#frReceivedTab" data-toggle="tab">Received requests ({{ num_rec }})</a></li>
+						<li><a href="#frRequestedTab" data-toggle="tab">Requested ({{ num_req }})</a></li>
+					</ul>
+					<div class="tab-content">
+						<div class="tab-pane active" id="frActiveTab">
+							{% if fr_act|length == 0 %}
+								<ul class="list-group">
+									<li class="list-group-item">No items</li>
+								</ul>
+							{% else %}
+								<ul class="list-group">
+								{% for item in fr_act %}
+								<li class="list-group-item">
+								<a href="{{ url_for('show', username=item.username) }}">{{ item.name }}</a>
+								<a href="{{ url_for('show', username=monkey.username, action='defriend', username2=item.username) }}" title="Un-friend"><span class="glyphicon glyphicon-remove-circle" style="float: right; display: inline;"></span></a>
+								</li>
+								{% endfor %}	
+								</ul>
+							{% endif %}
+						</div>
+						<div class="tab-pane" id="frRequestedTab">
+							{% if fr_req|length == 0 %}
+								<ul class="list-group">
+									<li class="list-group-item">No items</li>
+								</ul>
+							{% else %}
+								<ul class="list-group">
+								{% for item in fr_req %}
+								<li class="list-group-item">
+								<a href="{{ url_for('show', username=item.username) }}">{{ item.name }}</a>	
+								<a href="{{ url_for('show', username=monkey.username, action='cancel', username2=item.username) }}" title="Cancel request"><span class="glyphicon glyphicon-remove-circle" style="float: right; display: inline;"></span></a>
+								</li>
+								{% endfor %}	
+								</ul>
+							{% endif %}
+						</div>
+						<div class="tab-pane" id="frReceivedTab">
+							{% if fr_rec|length == 0 %}
+								<ul class="list-group">
+									<li class="list-group-item">No items</li>
+								</ul>
+							{% else %}
+								<ul class="list-group">
+								{% for item in fr_rec %}
+								<li class="list-group-item">
+								<a href="{{ url_for('show', username=item.username) }}">{{ item.name }}</a>
+								<div style="float: right; display: inline;">
+									<a href="{{url_for('show', username=monkey.username, action='accept', username2=item.username)}}" title="Accept"><span class="glyphicon glyphicon-check"></span></a>
+									<a href="{{url_for('show', username=monkey.username, action='reject', username2=item.username)}}" title="Reject"><span class="glyphicon glyphicon-remove-circle"></span></a>
+								</div>
+								</li>
+								{% endfor %}	
+								</ul>
+							{% endif %}
+						</div>
+					</div>
+				</td>
 			</tr>
 		</table>
 	</div>
 </div><!-- /jumbotron -->
+
+
 {% endblock %}
