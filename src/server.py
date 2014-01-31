@@ -137,18 +137,26 @@ def list():
                 # Find friends
                 fr_ids = [x['id'] for x in result]
                 # TODO: Write a database query here!
-                all_frshps = query_db('SELECT nodeid,id1,id2 FROM friendships WHERE {} OR {}'.format(make_in_query('id1',fr_ids),make_in_query('id2',fr_ids)), args=fr_ids+fr_ids)
+                all_frshps = query_db('SELECT nodeid,id1,id2,M1.name AS initname,M2.name AS recvname FROM friendships,monkeys M1,monkeys M2 WHERE ({} OR {}) AND (M1.id=id1 AND M2.id=id2)'.format(make_in_query('id1',fr_ids),make_in_query('id2',fr_ids)), args=fr_ids+fr_ids)
+                # Note query includes the monkeys table to remove missing monkeys from the result!
                 monkeys = []
                 for monkey in result:
-                    frshps_init = [x['id2'] for x in all_frshps if x['id1'] == monkey['id']]
-                    frshps_recd = [x['id1'] for x in all_frshps if x['id2'] == monkey['id']]
+                    frshps_init = [(x['id2'],x['recvname']) for x in all_frshps if x['id1'] == monkey['id']]
+                    frshps_recd = [(x['id1'],x['initname']) for x in all_frshps if x['id2'] == monkey['id']]
+                    #print(monkey)
+                    #print(frshps_init)
+                    #print(frshps_recd)
                     frshps_act  = [x for x in frshps_init if x in frshps_recd]
                     frshps_rec  = [x for x in frshps_recd if x not in frshps_act]
                     frshps_req  = [x for x in frshps_init if x not in frshps_act]
+                    #print(frshps_act)
+                    #print(frshps_rec)
+                    #print(frshps_req)
                     num_act = len(frshps_act)
                     num_rec = len(frshps_rec)
                     num_req = len(frshps_req)
-                    monkeys.append({'id':monkey['id'],'name':monkey['name'],'username':monkey['username'],'act':num_act,'rec':num_rec,'req':num_req})
+                    # The monkeys frshps lists contain also the names for the friends
+                    monkeys.append({'id':monkey['id'],'name':monkey['name'],'username':monkey['username'],'act':num_act,'rec':num_rec,'req':num_req,'fract':frshps_act,'frrec':frshps_rec,'frreq':frshps_req})
 
 		return render_template('list_monkeys.html', monkeys=monkeys, params=params)
 

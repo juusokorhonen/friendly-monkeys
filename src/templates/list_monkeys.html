@@ -46,7 +46,7 @@
 						<a href="{{ url_for('list') }}?offset={{ params.offset }}&limit={{ params.limit }}&orderby=name&order=asc">Name</a>
 					{% endif %}
 			</th>
-			<th>Friends</th>
+			<th colspan="3">Friends</th>
 			<th>Actions</th>
 		</tr>
 	</thead>
@@ -54,12 +54,18 @@
 	{% set rownum = params['offset'] %}
 	{% for monkey in monkeys %}
 	<tr>
-			<td><span class="text-muted">{{ rownum }}.</span></td>		
+			<td><span class="badge" style="background-color: #ccc; color: #eee;">{{ rownum }}</span></td>		
 			<td>{{ monkey.id }}</td>
 			<td>{{ monkey.username }}</td>
 			<td>{{ monkey.name }}</td>
-			<td>
-				<span style="color:green;">{{ monkey.act }}</span>/<span style="color:orange;">{{ monkey.rec }}</span>/<span style="color:red;">{{ monkey.req }}</span>
+			<td align="center" style="padding-left: 0; padding-right: 0;">
+				<span class="badge" style="background-color:green;" title="Active friendships">{{ monkey.act }}</span> 
+			</td>
+			<td align="center" style="padding-left: 0; padding-right: 0;">
+				<span class="badge" style="background-color:orange;" title="Received friendship requests">{{ monkey.rec }}</span> 
+			</td>
+			<td align="center" style="padding-left: 0; padding-right: 0;">
+				<span class="badge" style="background-color:red;" title="Unanswered friendships requests">{{ monkey.req }}</span>
 			</td>
 			<td>
 				<a href="{{url_for('show', username=monkey.username)}}" class="btn btn-primary btn-xs" role="button">Show</a>
@@ -72,7 +78,7 @@
 	</tbody>
 	<tfoot>
 			<tr>
-					<td colspan="6" align="center">
+					<td colspan="8" align="center">
 						<div width="100%" align="right">
 							<small>Displaying	
 							<div class="btn-group">
@@ -87,16 +93,25 @@
 								results per page of total <strong class="text-primary">{{ params.entries }}</strong> monkeys</small>
 						</div>
 						<div width="100%" align="center">
+							<ul class="pagination pagination-sm">
+								{% if params.pagenum > 0 %}
+									<li><a href="{{url_for('list', offset=((params.pagenum-1)*params.limit), limit=(params.limit), orderby=(params.orderby), order=(params.order))}}">&laquo;</a></li>
+								{% else %}
+								<li class="disabled"><a href="#">&laquo;</a></li>	
+								{% endif %}
 								{% for page in range(params.pages) %}
 									{% if params.pagenum == page %}
-										<strong>
-										{{ page+1 }}
-										</strong>
+										<li class="active"><a href="#">{{ page+1 }}<span class="sr-only">(current)</span></a></li>
 									{% else %}
-									<a href="{{url_for('list')}}?offset={{ page*params.limit }}&limit={{ params.limit }}&orderby={{ params.orderby }}&order={{ params.order }}">{{ page+1 }}</a>
+										<li><a href="{{url_for('list')}}?offset={{ page*params.limit }}&limit={{ params.limit }}&orderby={{ params.orderby }}&order={{ params.order }}">{{ page+1 }}</a></li>
 									{% endif %}
 								{% endfor %}
-								<!-- <small>&lt;&lt; [1, 2, 3, 4, ... 10] &gt;&gt;</small> /-->
+								{% if params.pagenum+1 < params.pages %}
+									<li><a href="{{ url_for('list', offset=((params.pagenum+1)*params.limit), limit=params.limit, orderby=params.orderby, order=params.order)}}">&raquo;</a></li>
+								{% else %}
+									<li class="disabled"><a href="#">&raquo;</a></li>
+								{% endif %}
+							</ul>
 						</div>
 					</td>
 			</tr>
